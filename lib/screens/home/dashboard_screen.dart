@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../auth/login_screen.dart';
+import '../chat/ai_chat_screen.dart';
+import '../admin/agent_config_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -14,6 +16,20 @@ class DashboardScreen extends StatelessWidget {
     final user = authProvider.user;
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          if (user != null) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => AIChatScreen(userProfile: user),
+              ),
+            );
+          }
+        },
+        icon: const Icon(Icons.psychology),
+        label: const Text('Copiloto IA'),
+        backgroundColor: const Color(0xFF00C853),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -21,7 +37,7 @@ class DashboardScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
-              _buildHeader(context, user?.name ?? 'Usuário'),
+              _buildHeader(context, user),
 
               const SizedBox(height: 32),
 
@@ -49,7 +65,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, String userName) {
+  Widget _buildHeader(BuildContext context, dynamic user) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -86,6 +102,31 @@ class DashboardScreen extends StatelessWidget {
             }
           },
           itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'ai_config',
+              child: Row(
+                children: [
+                  const Icon(Icons.smart_toy, color: Color(0xFF00C853)),
+                  const SizedBox(width: 12),
+                  const Text('Agente IA (Admin)', style: TextStyle(color: Color(0xFF00C853))),
+                ],
+              ),
+              onTap: () {
+                // Captura user e navigator do contexto antes do async gap
+                final userProfile = user;
+                final navigator = Navigator.of(context);
+                Future.delayed(Duration.zero, () {
+                  if (userProfile != null) {
+                    navigator.push(
+                      MaterialPageRoute(
+                        builder: (_) => AgentConfigScreen(userProfile: userProfile),
+                      ),
+                    );
+                  }
+                });
+              },
+            ),
+            const PopupMenuDivider(),
             const PopupMenuItem(
               value: 'profile',
               child: Row(
