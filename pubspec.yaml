@@ -36,6 +36,7 @@ dependencies:
   cloud_firestore: 5.4.3
   firebase_auth: 5.3.1
   firebase_storage: 12.3.2
+  google_sign_in: 6.2.2  # Autenticação Google
   
   # Estado e Gerenciamento - Homeostase do Sistema
   provider: 6.1.5+1

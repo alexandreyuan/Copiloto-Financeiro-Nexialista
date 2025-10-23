@@ -4,6 +4,8 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_profile.dart';
 import 'local_storage_service.dart';
 
@@ -14,6 +16,10 @@ class AuthServiceLocal {
   AuthServiceLocal._internal();
 
   final _storage = LocalStorageService();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   
   // 🧬 Keys para SharedPreferences
   static const String _authTokenKey = 'auth_token';
@@ -135,11 +141,79 @@ class AuthServiceLocal {
     return updatedUser;
   }
 
+  // 🧬 Login com Google
+  Future<UserProfile> signInWithGoogle() async {
+    try {
+      // Trigger Google Sign-In flow
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        throw Exception('Login cancelado pelo usuário');
+      }
+
+      // Obtain auth details from request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // Create a new credential
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Sign in to Firebase with the Google credential
+      final UserCredential userCredential = await _firebaseAuth.signInWithCredential(credential);
+      final User? firebaseUser = userCredential.user;
+
+      if (firebaseUser == null) {
+        throw Exception('Erro ao autenticar com Google');
+      }
+
+      // Criar ou atualizar usuário local
+      UserProfile? existingUser = await _storage.getCurrentUser();
+      
+      UserProfile user;
+      if (existingUser != null && existingUser.email == firebaseUser.email) {
+        // Atualizar usuário existente
+        user = existingUser.copyWith(
+          name: firebaseUser.displayName ?? existingUser.name,
+          lastActive: DateTime.now(),
+        );
+      } else {
+        // Criar novo usuário
+        user = await _storage.createUser(
+          email: firebaseUser.email ?? 'no-email@google.com',
+          name: firebaseUser.displayName ?? 'Usuário Google',
+        );
+      }
+
+      await _storage.updateUser(user);
+
+      // Gerar token de sessão
+      final prefs = await SharedPreferences.getInstance();
+      final token = _generateToken(user.id);
+      await prefs.setString(_authTokenKey, token);
+
+      _currentUser = user;
+      return user;
+    } catch (e) {
+      throw Exception('Erro ao fazer login com Google: ${e.toString()}');
+    }
+  }
+
   // 🧬 Logout
   Future<void> signOut() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_authTokenKey);
     await _storage.clearCurrentUser();
+    
+    // Sign out from Google if signed in
+    if (await _googleSignIn.isSignedIn()) {
+      await _googleSignIn.signOut();
+    }
+    
+    // Sign out from Firebase
+    await _firebaseAuth.signOut();
+    
     _currentUser = null;
   }
 
