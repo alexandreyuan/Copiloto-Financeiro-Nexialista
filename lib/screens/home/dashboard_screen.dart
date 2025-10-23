@@ -102,31 +102,34 @@ class DashboardScreen extends StatelessWidget {
             }
           },
           itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'ai_config',
-              child: Row(
-                children: [
-                  const Icon(Icons.smart_toy, color: Color(0xFF00C853)),
-                  const SizedBox(width: 12),
-                  const Text('Agente IA (Admin)', style: TextStyle(color: Color(0xFF00C853))),
-                ],
+            // Menu admin - apenas para administradores
+            if (user?.isAdmin ?? false) ...[
+              PopupMenuItem(
+                value: 'ai_config',
+                child: Row(
+                  children: [
+                    const Icon(Icons.smart_toy, color: Color(0xFF00C853)),
+                    const SizedBox(width: 12),
+                    const Text('Agente IA (Admin)', style: TextStyle(color: Color(0xFF00C853))),
+                  ],
+                ),
+                onTap: () {
+                  // Captura user e navigator do contexto antes do async gap
+                  final userProfile = user;
+                  final navigator = Navigator.of(context);
+                  Future.delayed(Duration.zero, () {
+                    if (userProfile != null) {
+                      navigator.push(
+                        MaterialPageRoute(
+                          builder: (_) => AgentConfigScreen(userProfile: userProfile),
+                        ),
+                      );
+                    }
+                  });
+                },
               ),
-              onTap: () {
-                // Captura user e navigator do contexto antes do async gap
-                final userProfile = user;
-                final navigator = Navigator.of(context);
-                Future.delayed(Duration.zero, () {
-                  if (userProfile != null) {
-                    navigator.push(
-                      MaterialPageRoute(
-                        builder: (_) => AgentConfigScreen(userProfile: userProfile),
-                      ),
-                    );
-                  }
-                });
-              },
-            ),
-            const PopupMenuDivider(),
+              const PopupMenuDivider(),
+            ],
             const PopupMenuItem(
               value: 'profile',
               child: Row(

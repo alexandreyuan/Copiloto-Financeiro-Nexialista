@@ -16,10 +16,16 @@ enum CurrencyPreference {
   mixed, // Multi-moeda adaptativa
 }
 
+enum UserRole {
+  user, // Usuário padrão
+  admin, // Administrador com acesso total
+}
+
 class UserProfile {
   final String id;
   final String email;
   final String name;
+  final UserRole role;
   final String timezone;
   final CurrencyPreference baseCurrency;
   final RiskProfile riskProfile;
@@ -28,10 +34,16 @@ class UserProfile {
   final DateTime lastActive;
   final Map<String, dynamic> metadata;
 
+  // 🧬 Lista de emails de administradores
+  static const List<String> adminEmails = [
+    'yuan@apxconsultoria.com',
+  ];
+
   UserProfile({
     required this.id,
     required this.email,
     required this.name,
+    UserRole? role,
     this.timezone = 'America/Sao_Paulo',
     this.baseCurrency = CurrencyPreference.brl,
     this.riskProfile = RiskProfile.moderate,
@@ -39,15 +51,23 @@ class UserProfile {
     required this.createdAt,
     required this.lastActive,
     this.metadata = const {},
-  });
+  }) : role = role ?? (adminEmails.contains(email.toLowerCase()) ? UserRole.admin : UserRole.user);
+
+  // 🧬 Verificar se é administrador
+  bool get isAdmin => role == UserRole.admin || adminEmails.contains(email.toLowerCase());
 
   // 🧬 Construtor a partir de Firestore (nascimento digital)
   factory UserProfile.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final email = data['email'] as String? ?? '';
     return UserProfile(
       id: doc.id,
-      email: data['email'] as String? ?? '',
+      email: email,
       name: data['name'] as String? ?? '',
+      role: UserRole.values.firstWhere(
+        (e) => e.name == (data['role'] as String? ?? ''),
+        orElse: () => adminEmails.contains(email.toLowerCase()) ? UserRole.admin : UserRole.user,
+      ),
       timezone: data['timezone'] as String? ?? 'America/Sao_Paulo',
       baseCurrency: CurrencyPreference.values.firstWhere(
         (e) => e.name == (data['base_currency'] as String? ?? 'brl'),
@@ -69,6 +89,7 @@ class UserProfile {
     return {
       'email': email,
       'name': name,
+      'role': role.name,
       'timezone': timezone,
       'base_currency': baseCurrency.name,
       'risk_profile': riskProfile.name,
@@ -83,6 +104,7 @@ class UserProfile {
   UserProfile copyWith({
     String? email,
     String? name,
+    UserRole? role,
     String? timezone,
     CurrencyPreference? baseCurrency,
     RiskProfile? riskProfile,
@@ -94,6 +116,7 @@ class UserProfile {
       id: id,
       email: email ?? this.email,
       name: name ?? this.name,
+      role: role ?? this.role,
       timezone: timezone ?? this.timezone,
       baseCurrency: baseCurrency ?? this.baseCurrency,
       riskProfile: riskProfile ?? this.riskProfile,

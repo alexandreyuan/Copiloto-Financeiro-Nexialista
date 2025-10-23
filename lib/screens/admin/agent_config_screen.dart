@@ -75,11 +75,7 @@ class _AgentConfigScreenState extends State<AgentConfigScreen> {
   }
 
   // Verificar se usuário é admin
-  bool get isAdmin {
-    // TODO: Implementar verificação real de role
-    // Por enquanto, retorna true para demonstração
-    return true;
-  }
+  bool get isAdmin => widget.userProfile.isAdmin;
 
   @override
   Widget build(BuildContext context) {
