@@ -50,3 +50,9 @@ app.*.map.json
 /firebase_options.dart
 /google-services.json
 /ios/Runner/GoogleService-Info.plist
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
